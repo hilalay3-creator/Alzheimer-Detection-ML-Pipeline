@@ -1,0 +1,27 @@
+
+=============================================================================
+             ALZHEIMER ERKEN TEŞHİS MODELİ - FİNAL SONUÇ RAPORU
+=============================================================================
+Veri Seti: oasis_longitudinal.csv (Temizlenmiş ve Z-Score uygulanmış)
+Model Türü: Random Forest (Hiperparametre Optimize Edilmiş, n=1000 ağaç)
+Karar Eşiği (Threshold): 0.65 (Yanlış Alarmları Azaltmak İçin Optimize Edildi)
+
+-----------------------------------------------------------------------------
+1. MODEL PERFORMANSI (TEST SETİ)
+-----------------------------------------------------------------------------
+Genel Doğruluk (Accuracy): %82.61
+Tutarlılık (Cross-Validation Ortalama F1): (Bu değer main.py'dan gelmeli)
+
+-----------------------------------------------------------------------------
+2. TIBBİ ANALİZ VE KRİTİK FAKTÖRLER
+-----------------------------------------------------------------------------
+Çalışmanın sonucuna göre; Alzheimer olma riskini en yüksek taşıyan grubun
+karar verilmesinde modelimizi EN ÇOK ETKİLEYEN ÖZELLİK:
+
+👉👉👉 x: MMSE (Zeka Testi) (%33.07 etki oranı ile) 👈👈👈
+
+Bu sonuç, bu tıbbi parametrenin Alzheimer erken teşhisinde kritik bir
+biyobelirteç veya test skoru olduğunu göstermektedir.
+-----------------------------------------------------------------------------
+Rapor Tarihi: 2026-03-23 15:15:20
+=============================================================================
