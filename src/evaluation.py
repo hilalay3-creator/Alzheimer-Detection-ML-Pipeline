@@ -2,89 +2,67 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import numpy as np
-from sklearn.metrics import confusion_matrix, classification_report, accuracy_score
+from sklearn.metrics import confusion_matrix, classification_report, accuracy_score, roc_curve, auc
 from sklearn.model_selection import cross_val_score 
 import warnings
-warnings.filterwarnings("ignore") # Tüm sarı uyarıları susturur
 
-def run_full_evaluation(model, name, X_test, y_test):
-    pass # Bu fonksiyonun içeriği main.py içine taşındı, çünkü orada daha fazla bilgiye erişim var (örneğin X_train_scaled, y_train gibi) ve bu sayede cross-validation da yapılabiliyor.
+warnings.filterwarnings("ignore")
 
 def run_cross_validation(model, X, y):
     print("\n🔄 5-Katlı Çapraz Doğrulama (Cross-Validation) Başlatılıyor...")
     cv_scores = cross_val_score(model, X, y, cv=5, scoring='f1')
-    
-    print(f"📈 Her Katın F1 Skorları: {cv_scores}")
     print(f"🏆 Ortalama F1 Başarısı: %{np.mean(cv_scores)*100:.2f}")
-    print(f"🔍 Standart Sapma (Tutarlılık): +/- {np.std(cv_scores)*100:.2f}")
-    
-    if np.std(cv_scores) < 0.15:
-        print("✅ Model çok tutarlı, farklı veri gruplarında benzer başarıyı gösteriyor.")
-    else:
-        print("⚠️ Model bazı veri gruplarında zorlanıyor, veri miktarını artırmak iyi olabilir.")
-def plot_feature_importance(model, feature_names):
-    """
-    Modelin en önemli bulduğu özellikleri Türkçe grafik olarak basar.
-    """
-    print("\n📊 Özellik Önem Sırası (Feature Importance) Analizi Başlatılıyor...")
-    
-    # Random Forest'tan önem katsayılarını al
-    importances = model.feature_importances_
-    
-    # Veriyi tabloya dök ve sırala
-    feat_imp_df = pd.DataFrame({
-        'Özellik': feature_names,
-        'Önem Skoru': importances
-    }).sort_values(by='Önem Skoru', ascending=False)
 
-    # Grafik Çizimi
-    plt.figure(figsize=(12, 8))
+def plot_feature_importance(model, feature_names):
+    importances = model.feature_importances_
+    feat_imp_df = pd.DataFrame({'Özellik': feature_names, 'Önem Skoru': importances}).sort_values(by='Önem Skoru', ascending=False)
+    plt.figure(figsize=(10, 6))
     sns.barplot(x='Önem Skoru', y='Özellik', data=feat_imp_df, palette='viridis')
-    plt.title('Alzheimer Teşhisinde En Etkili Tıbbi Faktörler (Random Forest)')
-    plt.xlabel('Modelin Kararındaki Etki Oranı')
-    plt.ylabel('Tıbbi Veri / Test Türü')
-    plt.tight_layout()
-    
-    # Grafiği kaydet
+    plt.title('Özellik Önem Sırası')
     plt.savefig('feature_importance.png')
-    print("📈 Özellik Önem Grafiği 'feature_importance.png' olarak kaydedildi.")
-    
-    # En önemli özelliği bul
-    most_important_feat = feat_imp_df.iloc[0]['Özellik']
-    most_important_score = feat_imp_df.iloc[0]['Önem Skoru']
-    
-    return most_important_feat, most_important_score
+    return feat_imp_df.iloc[0]['Özellik'], feat_imp_df.iloc[0]['Önem Skoru']
 
 def save_final_report_text(most_important_feat, most_important_score, accuracy):
-    """
-    Raporu hem .txt olarak kaydeder hem de ekranda bir figure penceresi olarak açar.
-    """
-        
-    # --- YENİ: GÖRSEL RAPOR PENCERESİ (FIGURE) ---
-    plt.figure(figsize=(10, 7), facecolor='#f0f0f0')
-    plt.axis('off') # Eksenleri kapatıyoruz, sadece yazı yazacağız
-    
-    rapor_baslik = "ALZHEIMER ERKEN TEŞHİS MODELİ - FİNAL ÖZETİ"
-    rapor_icerik = (
-        f"----------------------------------------------------------------------\n"
-        f"*** MODEL PERFORMANSI ***\n" 
-        f"Genel Doğruluk (Accuracy): %{accuracy*100:.2f}\n"
-        f"Karar Eşiği (Threshold): 0.65\n"
-        f"----------------------------------------------------------------------\n\n"
-        f"--- TIBBİ ANALİZ SONUCU ---\n"
-        f"Alzheimer riskini belirleyen EN KRİTİK FAKTÖR:\n\n"
-        f"-> {most_important_feat} <-\n\n"
-        f"Modelin kararlarındaki etki gücü: %{most_important_score*100:.2f}\n"
-        f"----------------------------------------------------------------------\n"
-        f"NOT: Bu sonuç, {most_important_feat} skorunun\n"
-        f"erken teşhis için en güçlü biyobelirteç olduğunu kanıtlar.\n"
-        f"----------------------------------------------------------------------"
-    )
+    print(f"\n📄 Final Raporu Hazırlanıyor... En Önemli Özellik: {most_important_feat}")
 
-    # Yazıları pencereye yerleştir
-    plt.text(0.5, 0.9, rapor_baslik, fontsize=16, fontweight='bold', ha='center', color='#2c3e50')
-    plt.text(0.5, 0.4, rapor_icerik, fontsize=13, ha='center', va='center', 
-             bbox=dict(boxstyle='round,pad=1', fc='white', ec='#34495e', alpha=0.9))
+def plot_roc_curve(model, X_test, y_test):
+    print("\n📈 ROC Eğrisi Analizi Başlatılıyor...")
+    y_probs = model.predict_proba(X_test)[:, 1] 
+    fpr, tpr, _ = roc_curve(y_test, y_probs)
+    roc_auc = auc(fpr, tpr)
+    plt.figure(figsize=(8, 6))
+    plt.plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC Eğrisi (AUC = {roc_auc:.2f})')
+    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    plt.xlabel('Yanlış Pozitif Oranı (FPR)')
+    plt.ylabel('Doğru Pozitif Oranı (TPR)')
+    plt.title('Alzheimer Teşhis Modeli ROC Eğrisi')
+    plt.legend(loc="lower right")
+    plt.grid(alpha=0.3)
+    plt.savefig('roc_curve.png')
+    print(f"✅ ROC Eğrisi 'roc_curve.png' olarak kaydedildi.")
 
+def plot_prediction_analysis(model, X_test, y_test, threshold=0.65):
+    print("\n🎯 Tahmin Analizi ve Hata Payı Grafiği Hazırlanıyor...")
+    y_probs = model.predict_proba(X_test)[:, 1]
+    results_df = pd.DataFrame({
+        'Gerçek Değer': y_test.values,
+        'Tahmin Olasılığı': y_probs,
+        'Vaka No': range(1, len(y_test) + 1)
+    })
+    results_df['Tahmin'] = (results_df['Tahmin Olasılığı'] >= threshold).astype(int)
+    results_df['Durum'] = np.where(results_df['Gerçek Değer'] == results_df['Tahmin'], 'Doğru', 'Hatalı')
+
+    plt.figure(figsize=(12, 6))
+    sns.scatterplot(data=results_df, x='Vaka No', y='Tahmin Olasılığı', 
+                    hue='Durum', style='Gerçek Değer', palette={'Doğru': '#2ecc71', 'Hatalı': '#e74c3c'},
+                    s=100, markers={0: 'o', 1: 'P'})
+    plt.axhline(y=threshold, color='black', linestyle='--', label=f'Karar Eşiği ({threshold})')
+    plt.ylim(-0.05, 1.05)
+    plt.title('Vaka Bazlı Tahmin Güveni ve Hata Analizi')
+    plt.xlabel('Test Verisindeki Hasta Sırası (1-23)')
+    plt.ylabel('Modelin Alzheimer Tahmin Olasılığı')
+    plt.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.grid(axis='y', alpha=0.3)
     plt.tight_layout()
-    plt.show() 
+    plt.savefig('prediction_error_analysis.png')
+    print("✅ Tahmin analizi grafiği kaydedildi.")
